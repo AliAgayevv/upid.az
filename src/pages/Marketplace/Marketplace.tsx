@@ -11,7 +11,6 @@ import {
   DollarLineIcon,
   TimeIcon,
   CheckCircleIcon,
-  PlusIcon,
   InfoIcon,
 } from "../../icons";
 import { PackagePlusIcon } from "lucide-react";

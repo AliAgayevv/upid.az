@@ -1,5 +1,5 @@
 import Badge from "../ui/badge/Badge";
-import { ArrowUpIcon, GroupIcon } from "../../icons";
+import { ArrowUpIcon } from "../../icons";
 
 interface MetricCardProps {
   cardTitle: string;

@@ -512,11 +512,7 @@ const AddService: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Xüsusiyyətlər *
             </h2>
-            <Button
-              type="button"
-              onClick={addFeature}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={addFeature} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Xüsusiyyət Əlavə Et
             </Button>
@@ -555,11 +551,7 @@ const AddService: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Etiketlər
             </h2>
-            <Button
-              type="button"
-              onClick={addTag}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={addTag} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Etiket Əlavə Et
             </Button>
@@ -637,17 +629,12 @@ const AddService: React.FC = () => {
         {/* Submit */}
         <div className="flex items-center justify-end gap-4">
           <Button
-            type="button"
             onClick={() => navigate("/admin/services")}
             className="bg-gray-500 hover:bg-gray-600"
           >
             Ləğv et
           </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2"
-          >
+          <Button disabled={isSubmitting} className="flex items-center gap-2">
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

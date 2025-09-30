@@ -1,14 +1,44 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    if (!email || !password) {
+      setError("E-poçt və şifrə daxil edin");
+      setIsLoading(false);
+      return;
+    }
+
+    const isSuccess = login(email, password);
+
+    if (isSuccess) {
+      navigate("/");
+    } else {
+      setError("E-poçt və ya şifrə yanlışdır");
+    }
+
+    setIsLoading(false);
+  };
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -34,13 +64,25 @@ export default function SignInForm() {
             <div className="relative py-3 sm:py-5">
               <div className="absolute inset-0 flex items-center"></div>
             </div>
-            <form>
+            <form onSubmit={handleSubmit}>
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-6">
                 <div>
                   <Label>
                     E-poçt <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@upid.com" />
+                  <Input
+                    type="email"
+                    placeholder="admin@upid.az yaxud client@upid.az"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
                 </div>
                 <div>
                   <Label>
@@ -49,7 +91,10 @@ export default function SignInForm() {
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Şifrəniz daxil edin"
+                      placeholder="admin123 yaxud client123"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -78,9 +123,35 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
-                    Daxil olmaq
-                  </Button>
+                  <button
+                    type="submit"
+                    className="w-full px-5 py-3.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Daxil olunur..." : "Daxil olmaq"}
+                  </button>
+                </div>
+
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
+                    Test məlumatları:
+                  </h4>
+                  <div className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+                    <p>
+                      <strong>Admin:</strong> admin@upid.az / admin123
+                    </p>
+                    <p>
+                      <strong>TechCorp:</strong> manager@techcorp.az / client123
+                    </p>
+                    <p>
+                      <strong>Beauty World:</strong> owner@beautyworld.az /
+                      client123
+                    </p>
+                    <p>
+                      <strong>Express Logistics:</strong>{" "}
+                      ceo@express-logistics.az / client123
+                    </p>
+                  </div>
                 </div>
               </div>
             </form>

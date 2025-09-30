@@ -1,381 +1,264 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
-
-// Assume these icons are imported from an icon library
-import {
-  BoxCubeIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  ReservationIcon,
-  TableIcon,
-  UserCircleIcon,
-} from "../icons";
+import { useAuth } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
-import SidebarWidget from "./SidebarWidget";
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import Badge from "../components/ui/badge/Badge";
+import {
+  GridIcon,
+  UserIcon,
+  DocsIcon,
+  BoxIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../icons";
 
-type NavItem = {
-  name: string;
+interface SubMenuItem {
+  label: string;
+  href: string;
+}
+
+interface MenuItem {
   icon: React.ReactNode;
-  path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
-};
-
-const navItems: NavItem[] = [
-  {
-    icon: <ReservationIcon />,
-    name: "Reservations",
-    path: "/reservations",
-  },
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
-];
+  label: string;
+  href?: string;
+  subItems?: SubMenuItem[];
+}
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded } = useSidebar();
+  const { user } = useAuth();
   const location = useLocation();
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // Admin menu items
+  const adminNavItems: MenuItem[] = [
+    {
+      icon: <GridIcon />,
+      label: "Dashboard",
+      href: "/",
+    },
+    {
+      icon: <UserIcon />,
+      label: "Şirkətlər",
+      href: "/companies",
+    },
+    {
+      icon: <BoxIcon />,
+      label: "Xidmətlər",
+      subItems: [
+        { label: "Bütün xidmətlər", href: "/services" },
+        { label: "Xidməti əlavə et", href: "/services/add" },
+      ],
+    },
+    {
+      icon: <DocsIcon />,
+      label: "Hesabatlar",
+      subItems: [
+        { label: "Hesabatların şablonları", href: "/reports/templates" },
+        { label: "Şablon yarat", href: "/reports/create" },
+        { label: "Şablonu göndər", href: "/reports/send" },
+      ],
+    },
+    {
+      icon: <UserIcon />,
+      label: "İstifadəçilər",
+      subItems: [
+        { label: "Bütün istifadəçilər", href: "/users" },
+        { label: "İstifadəçi əlavə et", href: "/users/add" },
+      ],
+    },
+  ];
 
-  // const isActive = (path: string) => location.pathname === path;
-  const isActive = useCallback(
-    (path: string) => location.pathname === path,
-    [location.pathname]
-  );
+  // Client menu items
+  const clientNavItems: MenuItem[] = [
+    {
+      icon: <GridIcon />,
+      label: "Dashboard",
+      href: "/",
+    },
+    {
+      icon: <BoxIcon />,
+      label: "Xidmətlər",
+      subItems: [
+        { label: "Abonə olduğum xidmətlər", href: "/my-services" },
+        { label: "Marketplace", href: "/marketplace" },
+      ],
+    },
+    {
+      icon: <DocsIcon />,
+      label: "Hesabatlar",
+      subItems: [{ label: "Hesabatlarıma bax", href: "/my-reports" }],
+    },
+  ];
 
-  useEffect(() => {
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
-
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [location, isActive]);
-
-  useEffect(() => {
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
-    }
-  }, [openSubmenu]);
-
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
-    });
+  const getMenuItems = () => {
+    if (!user) return [];
+    return user.role === "admin" ? adminNavItems : clientNavItems;
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
-    <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
-              } cursor-pointer ${
-                !isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-              }`}
-            >
-              <span
-                className={`menu-item-icon-size  ${
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
-                }`}
-              >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                  }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                to={nav.path}
-                className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                }`}
-              >
-                <span
-                  className={`menu-item-icon-size ${
-                    isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
-                  }`}
-                >
-                  {nav.icon}
-                </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
-                )}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-2 space-y-1 ml-9">
-                {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
-                    <Link
-                      to={subItem.path}
-                      className={`menu-dropdown-item ${
-                        isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
-                      }`}
-                    >
-                      {subItem.name}
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.new && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge`}
-                          >
-                            new
-                          </span>
-                        )}
-                        {subItem.pro && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge`}
-                          >
-                            pro
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+  const menuItems = getMenuItems();
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus((prev) =>
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  const isMenuOpen = (label: string) => openMenus.includes(label);
+
+  const isActiveMenu = (item: MenuItem) => {
+    if (item.href) {
+      return location.pathname === item.href;
+    }
+    if (item.subItems) {
+      return item.subItems.some(
+        (subItem) => location.pathname === subItem.href
+      );
+    }
+    return false;
+  };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
-        ${
-          isExpanded || isMobileOpen
-            ? "w-[290px]"
-            : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-800 transition-all duration-300 z-40 ${
+        isExpanded ? "w-64" : "w-16"
+      }`}
     >
-      <div
-        className={`py-8 flex ${
-          !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-        }`}
-      >
-        <Link to="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
-          ) : (
-            <img
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
-          )}
-        </Link>
-      </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
-          <div className="flex flex-col gap-4">
+      {/* Logo */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+        <div
+          className={`flex items-center ${
+            isExpanded ? "space-x-3" : "justify-center"
+          }`}
+        >
+          <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">U</span>
+          </div>
+          {isExpanded && (
             <div>
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
-                ) : (
-                  <HorizontaLDots className="size-6" />
-                )}
-              </h2>
-              {renderMenuItems(navItems, "main")}
+              <h2 className="font-bold text-gray-900 dark:text-white">UPID</h2>
+              <div className="flex items-center space-x-2">
+                <Badge
+                  color={user.role === "admin" ? "primary" : "success"}
+                  size="sm"
+                >
+                  {user.role === "admin" ? "Admin" : "Client"}
+                </Badge>
+              </div>
             </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="p-4">
+        <div className="space-y-2">
+          {menuItems.map((item) => (
+            <div key={item.label}>
+              {/* Main Menu Item */}
+              {item.href ? (
+                <Link
+                  to={item.href}
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                    location.pathname === item.href
+                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  } ${!isExpanded && "justify-center"}`}
+                >
+                  <span className="flex-shrink-0 w-5 h-5">{item.icon}</span>
+                  {isExpanded && (
+                    <span className="ml-3 font-medium text-sm">
+                      {item.label}
+                    </span>
+                  )}
+                  {!isExpanded && (
+                    <div className="absolute left-16 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              ) : (
+                <button
+                  onClick={() => toggleMenu(item.label)}
+                  className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                    isActiveMenu(item)
+                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  } ${!isExpanded && "justify-center"}`}
+                >
+                  <span className="flex-shrink-0 w-5 h-5">{item.icon}</span>
+                  {isExpanded && (
+                    <>
+                      <span className="ml-3 font-medium text-sm flex-1 text-left">
+                        {item.label}
+                      </span>
+                      <span className="ml-2 flex-shrink-0">
+                        {isMenuOpen(item.label) ? (
+                          <ChevronUpIcon className="w-4 h-4" />
+                        ) : (
+                          <ChevronDownIcon className="w-4 h-4" />
+                        )}
+                      </span>
+                    </>
+                  )}
+                  {!isExpanded && (
+                    <div className="absolute left-16 bg-gray-900 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                      {item.label}
+                    </div>
+                  )}
+                </button>
+              )}
+
+              {/* Submenu Items */}
+              {item.subItems && isExpanded && isMenuOpen(item.label) && (
+                <div className="ml-8 mt-2 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.href}
+                      to={subItem.href}
+                      className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                        location.pathname === subItem.href
+                          ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      <span className="w-2 h-2 bg-current rounded-full mr-3 opacity-50"></span>
+                      {subItem.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </nav>
+
+      {/* User Info */}
+      {isExpanded && (
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-brand-100 dark:bg-brand-500/20 rounded-full flex items-center justify-center">
+                <UserIcon className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {user.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user.email}
+                </p>
+              </div>
             </div>
           </div>
-        </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
-      </div>
+        </div>
+      )}
     </aside>
   );
 };
